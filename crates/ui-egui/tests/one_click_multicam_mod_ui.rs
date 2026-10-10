@@ -74,17 +74,38 @@ fn session() -> (Session, Vec<u64>) {
 struct Driver {
     harness: Harness<'static, FilmcraftApp>,
     tx: Sender<ControlRequest>,
+    snapshots: Option<PathBuf>,
 }
 
 impl Driver {
     fn new(session: Session) -> Self {
         let (tx, rx) = channel();
         let app = FilmcraftApp::new(session).with_control(rx);
-        let b = Harness::builder().with_size(egui::vec2(1600.0, 980.0)).with_max_steps(10_000);
+        let snapshots = std::env::var_os("FILMCRAFT_UI_SNAPSHOT_DIR").map(PathBuf::from);
+        let mut b = Harness::builder().with_size(egui::vec2(1600.0, 980.0)).with_max_steps(10_000);
+        if snapshots.is_some() {
+            b = b.wgpu();
+        }
         let harness = b.build_eframe(move |_cc| app);
-        let mut d = Driver { harness, tx };
+        let mut d = Driver { harness, tx, snapshots };
         d.frames(4);
         d
+    }
+
+    fn snapshot(&mut self, name: &str) {
+        let Some(dir) = self.snapshots.clone() else { return };
+        self.frames(3);
+        let img = match self.harness.render() {
+            Ok(i) => i,
+            Err(e) => {
+                eprintln!("snapshot {name} skipped: {e}");
+                return;
+            }
+        };
+        let _ = std::fs::create_dir_all(&dir);
+        let path = dir.join(format!("{name}.png"));
+        let _ = img.save(&path);
+        eprintln!("snapshot: {}", path.display());
     }
 
     fn frames(&mut self, n: usize) {
@@ -134,6 +155,7 @@ fn test_one_click_multicam_mod_workflow() {
     d.ok("ui.menu.invoke", json!({"id": "mods.manage"}));
     d.frames(2);
     assert!(d.app().ui.show_manage_mods);
+    d.snapshot("01-manage-mods-dialog");
     d.app().ui.show_manage_mods = false;
 
     // 2. Select 3 camera clips in Project panel
@@ -144,29 +166,29 @@ fn test_one_click_multicam_mod_workflow() {
     d.ok("ui.menu.invoke", json!({"id": "mods.oneClickMulticam"}));
     d.frames(2);
     assert!(d.app().ui.one_click_multicam_dialog.is_some());
+    d.snapshot("02-one-click-multicam-dialog");
 
-    // 4. Simulate user clicking "Create & Open Recorder" with In-point sync
-    {
-        let draft = d.app().ui.one_click_multicam_dialog.as_mut().unwrap();
-        draft.name = "Podcast Episode 1 - Cut".to_string();
-        draft.method = "in".to_string();
-    }
+    // 4. Simulate user clicking "Create & Open Recorder"
+    let draft = d.app().ui.one_click_multicam_dialog.take().unwrap();
+    // Auto-detected 'in' sync method because test media has no audio tracks
+    assert_eq!(draft.method, "in");
+    let res = filmcraft_ui_egui::mods::one_click_multicam::execute_one_click_multicam(d.app(), &draft);
+    assert!(res.is_ok(), "one-click multicam setup succeeded: {:?}", res);
 
-    // Execute the setup pipeline
-    let _ = filmcraft_ui_egui::mods::one_click_multicam::show_dialog;
-    // Direct execution call via the mod handler
-    let setup_res = d.app().session.execute("clip.createMulticam", json!({
-        "items": items,
-        "name": "Podcast Episode 1 - Cut (Source)",
-        "method": "in",
-        "audio": "camera1",
-        "cameraNames": "clip",
-    }));
-    assert!(setup_res.is_ok(), "multicam source created successfully");
-
-    // 5. Verify Program monitor is armed for recording & multi-camera view
-    d.app().ui.program.multicam = true;
-    d.app().ui.multicam_record = true;
+    // 5. Verify Program monitor is armed for recording & multi-camera view, and sequence is active
     assert!(d.app().ui.program.multicam);
     assert!(d.app().ui.multicam_record);
+    let target_seq_id = d.app().session.state.active_sequence.unwrap();
+    let seq = d.app().session.project.sequence(target_seq_id).unwrap();
+    assert_eq!(seq.video_tracks.len(), 1);
+    assert_eq!(seq.video_tracks[0].items.len(), 1, "V1 has the multicam track item placed");
+    assert!(seq.video_tracks[0].items[0].multicam.is_some(), "track item is marked as multicam");
+    assert!(d.app().ui.status.contains("armed for recording"));
+    d.frames(4);
+    d.snapshot("03-armed-multicam-view");
+
+    // 6. Test Kill-Switch: disabling the mod in config blocks invocation
+    d.app().ui.mods_config.one_click_multicam_enabled = false;
+    let res_disabled = d.call("ui.menu.invoke", json!({"id": "mods.oneClickMulticam"}));
+    assert_eq!(res_disabled["result"]["error"], "mod disabled");
 }

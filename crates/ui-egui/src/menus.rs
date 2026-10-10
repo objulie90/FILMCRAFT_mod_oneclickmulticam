@@ -506,17 +506,25 @@ pub fn invoke(app: &mut FilmcraftApp, ctx: &egui::Context, id: &str, mut params:
             return Ok(json!({"dialog": "manageMods"}));
         }
         "mods.oneClickMulticam" => {
+            if !app.ui.mods_config.one_click_multicam_enabled {
+                return Ok(json!({"error": "mod disabled"}));
+            }
             if app.session.state.project_selection.len() < 2 {
                 app.ui.status = "Select 2 or more clips in the Project panel for One Click Multicam".to_string();
                 return Ok(json!({"error": "insufficient selection"}));
             }
-            let first_name = app.session.state.project_selection.first()
+            let selection = app.session.state.project_selection.clone();
+            let all_have_audio = selection.iter().all(|id| {
+                app.session.project.item(*id).map_or(false, |it| it.has_audio())
+            });
+            let first_name = selection.first()
                 .and_then(|id| app.session.project.item(*id))
                 .map(|it| it.name.clone())
                 .unwrap_or_else(|| "Multicam".to_string());
             app.ui.one_click_multicam_dialog = Some(crate::mods::OneClickMulticamDraft {
                 name: format!("{first_name} Multicam Cut"),
-                method: "audio".to_string(),
+                items: selection,
+                method: if all_have_audio { "audio".to_string() } else { "in".to_string() },
                 audio_mode: "camera1".to_string(),
                 error_message: None,
             });

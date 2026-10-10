@@ -18,6 +18,8 @@ use crate::FilmcraftApp;
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct OneClickMulticamDraft {
     pub name: String,
+    /// Selected clip item IDs captured at dialog launch
+    pub items: Vec<ItemId>,
     /// Sync method: "audio", "timecode", or "in"
     pub method: String,
     /// Audio handling: "camera1" (master audio), "switch" (audio follows video), or "all"
@@ -30,6 +32,7 @@ impl Default for OneClickMulticamDraft {
     fn default() -> Self {
         Self {
             name: "Multicam Cut".to_string(),
+            items: Vec::new(),
             method: "audio".to_string(),
             audio_mode: "camera1".to_string(),
             error_message: None,
@@ -129,8 +132,12 @@ pub fn show_dialog(app: &mut FilmcraftApp, ctx: &egui::Context) {
 }
 
 /// Executes the full atomic multi-step setup.
-fn execute_one_click_multicam(app: &mut FilmcraftApp, draft: &OneClickMulticamDraft) -> Result<(), String> {
-    let items = app.session.state.project_selection.clone();
+pub fn execute_one_click_multicam(app: &mut FilmcraftApp, draft: &OneClickMulticamDraft) -> Result<(), String> {
+    let items = if !draft.items.is_empty() {
+        draft.items.clone()
+    } else {
+        app.session.state.project_selection.clone()
+    };
     if items.len() < 2 {
         return Err("Select 2 or more clips in the Project panel to synchronize".to_string());
     }
@@ -166,18 +173,26 @@ fn execute_one_click_multicam(app: &mut FilmcraftApp, draft: &OneClickMulticamDr
         let sid = pr.new_sequence(&draft.name, settings.clone(), 1, 1, None);
 
         let time_range = TimeRange::new(Tick::ZERO, duration);
-        if let Some(mut v_item) = pr.make_track_item(source_seq_id, TrackKind::Video, Tick::ZERO, time_range, settings.frame_rate) {
-            let link_id = pr.alloc_id();
-            v_item.link = Some(link_id);
-            if let Some(mut a_item) = pr.make_track_item(source_seq_id, TrackKind::Audio, Tick::ZERO, time_range, settings.frame_rate) {
-                a_item.link = Some(link_id);
-                if let Some(q) = pr.sequence_mut(sid) {
-                    if let Some(vt) = q.video_tracks.first_mut() {
-                        vt.items.push(v_item);
-                    }
-                    if let Some(at) = q.audio_tracks.first_mut() {
-                        at.items.push(a_item);
-                    }
+        let maybe_v = pr.make_track_item(source_seq_id, TrackKind::Video, Tick::ZERO, time_range, settings.frame_rate);
+        let maybe_a = pr.make_track_item(source_seq_id, TrackKind::Audio, Tick::ZERO, time_range, settings.frame_rate);
+
+        let link_id = if maybe_v.is_some() && maybe_a.is_some() {
+            Some(pr.alloc_id())
+        } else {
+            None
+        };
+
+        if let Some(q) = pr.sequence_mut(sid) {
+            if let Some(mut v_item) = maybe_v {
+                v_item.link = link_id;
+                if let Some(vt) = q.video_tracks.first_mut() {
+                    vt.items.push(v_item);
+                }
+            }
+            if let Some(mut a_item) = maybe_a {
+                a_item.link = link_id;
+                if let Some(at) = q.audio_tracks.first_mut() {
+                    at.items.push(a_item);
                 }
             }
         }
