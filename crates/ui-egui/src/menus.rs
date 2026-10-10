@@ -501,13 +501,26 @@ pub fn invoke(app: &mut FilmcraftApp, ctx: &egui::Context, id: &str, mut params:
                 return r;
             }
         }
-        "file.recover" if params.as_object().is_none_or(|m| m.is_empty()) => {
-            if app.session.recovery_candidates().is_empty() {
-                return Err("there are no unsaved changes to recover".into());
+        "mods.manage" => {
+            app.ui.show_manage_mods = true;
+            return Ok(json!({"dialog": "manageMods"}));
+        }
+        "mods.oneClickMulticam" => {
+            if app.session.state.project_selection.len() < 2 {
+                app.ui.status = "Select 2 or more clips in the Project panel for One Click Multicam".to_string();
+                return Ok(json!({"error": "insufficient selection"}));
             }
-            app.file_dialogs.recovery_choice = 0;
-            app.dialog = Some(crate::Dialog::Recovery);
-            return Ok(json!({"dialog": "recovery"}));
+            let first_name = app.session.state.project_selection.first()
+                .and_then(|id| app.session.project.item(*id))
+                .map(|it| it.name.clone())
+                .unwrap_or_else(|| "Multicam".to_string());
+            app.ui.one_click_multicam_dialog = Some(crate::mods::OneClickMulticamDraft {
+                name: format!("{first_name} Multicam Cut"),
+                method: "audio".to_string(),
+                audio_mode: "camera1".to_string(),
+                error_message: None,
+            });
+            return Ok(json!({"dialog": "oneClickMulticam"}));
         }
         _ => {}
     }
@@ -775,6 +788,28 @@ pub fn menu_bar(app: &mut FilmcraftApp, ui: &mut egui::Ui) {
             });
             app.auto.add(&format!("menu.{top}"), r.response.rect, top);
         }
+        // Bespoke Mods menu placed after Help with a visual separation gap
+        ui.add_space(10.0);
+        let mods_btn = ui.menu_button("Mods", |ui| {
+            ui.set_min_width(220.0);
+            if app.ui.mods_config.one_click_multicam_enabled {
+                let has_selection = app.session.state.project_selection.len() >= 2;
+                let btn = ui.add_enabled(has_selection, egui::Button::new("One Click Multicam…"));
+                app.auto.add("menu.mods.oneClickMulticam", btn.rect, "One Click Multicam…");
+                if btn.clicked() {
+                    clicked = Some("mods.oneClickMulticam".to_string());
+                    ui.close();
+                }
+            }
+            ui.separator();
+            let manage_btn = ui.button("Manage Mods…");
+            app.auto.add("menu.mods.manage", manage_btn.rect, "Manage Mods…");
+            if manage_btn.clicked() {
+                clicked = Some("mods.manage".to_string());
+                ui.close();
+            }
+        });
+        app.auto.add("menu.Mods", mods_btn.response.rect, "Mods");
     });
     if let Some(id) = clicked {
         let _ = invoke(app, &ctx, &id, json!({}));

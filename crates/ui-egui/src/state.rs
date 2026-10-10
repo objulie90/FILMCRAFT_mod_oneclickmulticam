@@ -588,6 +588,13 @@ pub struct UiState {
     /// Media Browser view state (tree, path field, Edit Columns…). See `panels::media_browser`.
     #[serde(default)]
     pub media_browser: crate::panels::media_browser::MediaBrowserUi,
+    /// Custom mods settings and dialog states. See `mods`.
+    #[serde(default)]
+    pub mods_config: crate::mods::ModsConfig,
+    #[serde(default)]
+    pub show_manage_mods: bool,
+    #[serde(default)]
+    pub one_click_multicam_dialog: Option<crate::mods::OneClickMulticamDraft>,
 }
 
 /// An open Edit / Clip / File menu dialog: the engine command it runs on OK and the parameters
@@ -1000,6 +1007,9 @@ impl Default for UiState {
             keys: Default::default(),
             project_panel: Default::default(),
             media_browser: Default::default(),
+            mods_config: Default::default(),
+            show_manage_mods: false,
+            one_click_multicam_dialog: None,
         }
     }
 }

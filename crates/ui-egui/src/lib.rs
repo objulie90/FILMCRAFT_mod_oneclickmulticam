@@ -42,6 +42,7 @@ pub mod i18n;
 pub mod icons;
 pub mod links;
 pub mod menus;
+pub mod mods;
 pub mod panels;
 pub mod perf;
 #[cfg(not(target_arch = "wasm32"))]
