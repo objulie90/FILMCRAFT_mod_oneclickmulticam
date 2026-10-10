@@ -41,6 +41,7 @@ pub fn show_dialogs(app: &mut FilmcraftApp, ctx: &egui::Context) {
 pub fn show_manage_mods_dialog(app: &mut FilmcraftApp, ctx: &egui::Context) {
     let mut open = app.ui.show_manage_mods;
     let t = app.tokens;
+    let mut close = false;
 
     egui::Window::new("Manage Mods")
         .id(egui::Id::new("manage-mods-dialog"))
@@ -62,10 +63,10 @@ pub fn show_manage_mods_dialog(app: &mut FilmcraftApp, ctx: &egui::Context) {
             let card_fill = Color32::from_rgb(0x28, 0x28, 0x28);
             let stroke = Stroke::new(1.0, Color32::from_rgb(0x3a, 0x3a, 0x3a));
 
-            egui::Frame::none()
+            egui::Frame::new()
                 .fill(card_fill)
                 .stroke(stroke)
-                .rounding(6.0)
+                .corner_radius(6.0)
                 .inner_margin(12.0)
                 .show(ui, |ui| {
                     ui.horizontal(|ui| {
@@ -95,13 +96,13 @@ pub fn show_manage_mods_dialog(app: &mut FilmcraftApp, ctx: &egui::Context) {
             ui.horizontal(|ui| {
                 ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
                     if ui.button("Close").clicked() {
-                        app.ui.show_manage_mods = false;
+                        close = true;
                     }
                 });
             });
         });
 
-    if ctx.input(|i| i.key_pressed(egui::Key::Escape)) {
+    if close || ctx.input(|i| i.key_pressed(egui::Key::Escape)) {
         open = false;
     }
     app.ui.show_manage_mods = open;

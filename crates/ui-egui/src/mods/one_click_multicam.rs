@@ -47,6 +47,7 @@ pub fn show_dialog(app: &mut FilmcraftApp, ctx: &egui::Context) {
     };
 
     let mut execute_setup = false;
+    let mut cancel = false;
 
     egui::Window::new("One Click Multicam Setup")
         .id(egui::Id::new("one-click-multicam-dialog"))
@@ -94,7 +95,7 @@ pub fn show_dialog(app: &mut FilmcraftApp, ctx: &egui::Context) {
             ui.add_space(16.0);
             ui.horizontal(|ui| {
                 if ui.button("Cancel").clicked() {
-                    open = false;
+                    cancel = true;
                 }
                 ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
                     if ui.button(egui::RichText::new("Create & Open Recorder").strong()).clicked() {
@@ -104,7 +105,7 @@ pub fn show_dialog(app: &mut FilmcraftApp, ctx: &egui::Context) {
             });
         });
 
-    if ctx.input(|i| i.key_pressed(egui::Key::Escape)) {
+    if cancel || ctx.input(|i| i.key_pressed(egui::Key::Escape)) {
         open = false;
     }
 
