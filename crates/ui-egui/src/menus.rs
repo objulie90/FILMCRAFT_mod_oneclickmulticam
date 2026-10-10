@@ -637,6 +637,24 @@ pub fn menu_items(app: &FilmcraftApp) -> Vec<MenuItem> {
         }
     }
     crate::panels::workspaces::menu(app, &mut v);
+    if app.ui.mods_config.one_click_multicam_enabled {
+        v.push(MenuItem {
+            id: "mods.oneClickMulticam".to_string(),
+            path: vec!["Mods".to_string()],
+            label: "One Click Multicam…".to_string(),
+            shortcut: None,
+            enabled: app.session.state.project_selection.len() >= 2,
+            checked: None,
+        });
+    }
+    v.push(MenuItem {
+        id: "mods.manage".to_string(),
+        path: vec!["Mods".to_string()],
+        label: "Manage Mods…".to_string(),
+        shortcut: None,
+        enabled: true,
+        checked: None,
+    });
     v
 }
 
@@ -785,7 +803,10 @@ pub fn menu_bar(app: &mut FilmcraftApp, ui: &mut egui::Ui) {
     let ctx = ui.ctx().clone();
     let mut clicked: Option<String> = None;
     egui::MenuBar::new().config(egui::containers::menu::MenuConfig::new().style(crate::theme::menu_style)).ui(ui, |ui| {
-        for top in MENUS {
+        for top in MENUS.iter().copied().chain(["Mods"]) {
+            if top == "Mods" {
+                ui.add_space(10.0);
+            }
             let mine: Vec<&MenuItem> = items.iter().filter(|i| i.path.first().map(String::as_str) == Some(top)).collect();
             let r = ui.menu_button(app.ui.language.tr(top), |ui| {
                 ui.set_min_width(260.0);
@@ -796,28 +817,6 @@ pub fn menu_bar(app: &mut FilmcraftApp, ui: &mut egui::Ui) {
             });
             app.auto.add(&format!("menu.{top}"), r.response.rect, top);
         }
-        // Bespoke Mods menu placed after Help with a visual separation gap
-        ui.add_space(10.0);
-        let mods_btn = ui.menu_button("Mods", |ui| {
-            ui.set_min_width(220.0);
-            if app.ui.mods_config.one_click_multicam_enabled {
-                let has_selection = app.session.state.project_selection.len() >= 2;
-                let btn = ui.add_enabled(has_selection, egui::Button::new("One Click Multicam…"));
-                app.auto.add("menu.mods.oneClickMulticam", btn.rect, "One Click Multicam…");
-                if btn.clicked() {
-                    clicked = Some("mods.oneClickMulticam".to_string());
-                    ui.close();
-                }
-            }
-            ui.separator();
-            let manage_btn = ui.button("Manage Mods…");
-            app.auto.add("menu.mods.manage", manage_btn.rect, "Manage Mods…");
-            if manage_btn.clicked() {
-                clicked = Some("mods.manage".to_string());
-                ui.close();
-            }
-        });
-        app.auto.add("menu.Mods", mods_btn.response.rect, "Mods");
     });
     if let Some(id) = clicked {
         let _ = invoke(app, &ctx, &id, json!({}));

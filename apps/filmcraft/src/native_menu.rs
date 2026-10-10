@@ -49,7 +49,7 @@ pub fn install(app: &FilmcraftApp, ctx: egui::Context) -> (Receiver<String>, Sho
         &PredefinedMenuItem::quit(None),
     ]);
     let _ = bar.append(&app_menu);
-    for top in MENUS {
+    for top in MENUS.iter().copied().chain(["Mods"]) {
         let sub = Submenu::new(app.ui.language.tr(top), true);
         titles.push((top.into(), sub.clone()));
         let mine: Vec<&Item> = items.iter().filter(|i| i.path.first().map(String::as_str) == Some(top) && !i.id.starts_with("app.settings.")).collect();
@@ -78,7 +78,7 @@ pub fn install(app: &FilmcraftApp, ctx: egui::Context) -> (Receiver<String>, Sho
         let _ = bar.append(&sub);
     }
     bar.init_for_nsapp();
-    if let Some(help) = bar.items().last().and_then(|i| i.as_submenu().cloned()) {
+    if let Some(help) = titles.iter().find(|(t, _)| t == "Help").map(|(_, s)| s.clone()) {
         help.set_as_help_menu_for_nsapp();
     }
     Box::leak(Box::new(bar));
