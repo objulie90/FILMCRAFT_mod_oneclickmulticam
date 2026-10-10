@@ -8,11 +8,64 @@
 </p>
 
 
-<h1 align="center">FilmCraft</h1>
+<h1 align="center">FilmCraft — One-Click Multicam Mod 🎬⚡</h1>
 
 <p align="center">
-  <b>Video editing, color and sound; an open-source, clean-room reimplementation of Adobe Premiere Pro, rebuilt in pure Rust.</b>
+  <b>Instant Multicam Workflow & Live-Switch Recording Extension for FilmCraft</b><br>
+  <i>Turn 7 tedious multicam setup steps into a single, seamless click.</i>
 </p>
+
+---
+
+## ⚡ What is the One-Click Multicam Mod?
+
+The **One-Click Multicam Mod** is an open-source workflow optimization for **FilmCraft** (the pure-Rust professional NLE video editor). 
+
+It introduces a bespoke **`Mods`** menu bar extension and an automated pipeline designed specifically for **multicam podcast editing, multi-angle interviews, concerts, and live studio shoots**.
+
+### 🔍 Why Was It Developed?
+In standard video editing software (including Premiere Pro and vanilla FilmCraft), creating a multicam sequence is a clumsy, friction-filled 7-step process:
+1. Selecting multiple camera clips in the bin.
+2. Opening the source sync dialog and choosing settings.
+3. Generating a separate, nested source sequence.
+4. Manually creating a target edit sequence.
+5. Dragging and aligning the source nest onto V1/A1.
+6. Enabling multi-camera mode on the nested clip.
+7. Going into the Program monitor wrench menu, switching to Multi-Camera View, and arming Record.
+
+**This mod eliminates the entire friction curve.** Select your clips, click **`Mods ▸ One Click Multicam`**, pick your sync method, and you are immediately parked on your new timeline with the Multi-Camera Angle Grid live and armed for recording (`REC`).
+
+---
+
+## ✨ Features
+- 🚀 **1-Click Atomic Pipeline**: Synchronizes clips, nests them, creates your edit timeline, places the sync nest, and arms live camera switching in one step.
+- 🎙️ **Flexible Audio Routing**:
+  - **Camera 1 Master Audio**: Locks audio to your dedicated primary mic or audio recorder while switching angles.
+  - **Audio Follows Video**: Automatically cuts audio in sync with each camera switch.
+  - **All Cameras**: Multi-track audio bed across all recorded streams.
+- 🎛️ **Audio Waveform & Timecode Sync**: Automatically aligns angles via audio acoustic correlation, timecode stamps, or In/Out marks.
+- 🛡️ **Built-in Mod Manager**: Includes a dedicated **`Mods ▸ Manage Mods…`** preferences panel with an instant kill-switch toggle to safely enable or disable mods at any time.
+
+---
+
+## 📖 How to Use
+
+1. **Select Footage**: In the Project panel, select 2 or more video or audio clips.
+2. **Launch Mod**: From the top menu bar, click **`Mods ▸ One Click Multicam…`**.
+3. **Configure Options**:
+   - Give your sequence a name (e.g. *Episode 12 - Multicam Cut*).
+   - Choose your sync method (*Audio Waveform*, *Timecode*, or *In Points*).
+   - Select your audio mode (*Camera 1 Audio*, *Audio Follows Video*, or *All Cameras*).
+4. **Hit "Create & Open Recorder"**: Press Space to play, and press keys **1–9** (or click angle tiles) to switch cameras in real-time!
+
+---
+
+## 🏷️ SEO & Search Keywords
+`filmcraft` · `multicam editing` · `podcast video editor` · `one-click multicam` · `multicamera sync` · `audio waveform synchronization` · `premiere pro alternative` · `open source video editor` · `rust video editor` · `live multicam recording` · `multicam cutting` · `multi-angle video production` · `non-linear editor mod`
+
+---
+
+## Original FilmCraft Overview
 
 <p align="center">
   An open-source, clean-room take on the Adobe Premiere Pro workflow: native on macOS, Windows and Linux, and in the browser via WebAssembly.<br>
